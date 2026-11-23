@@ -1,0 +1,26 @@
+.site-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px;margin:32px 0 0;padding:20px 0 calc(24px + env(safe-area-inset-bottom));border-top:1px solid #293d54;color:#a9b9cd;font-size:12px}
+.site-footer p{margin:0}
+.site-footer a,.legal-document a{color:#a8d2ff;text-decoration:none}
+.site-footer a:hover,.legal-document a:hover{text-decoration:underline}
+.site-footer-links{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
+.site-footer .copyright{flex-basis:100%;color:#edf3fb}
+.login-site-footer{justify-content:center;text-align:center;margin-top:24px;padding-top:16px}
+.login-site-footer .copyright{flex-basis:100%}
+.legal-page{min-height:100dvh;padding:clamp(18px,4vw,48px);background:radial-gradient(ellipse at 85% 0%,#152a42 0,transparent 45%),#080f19}
+.legal-document{width:min(920px,100%);margin:0 auto;padding:clamp(22px,5vw,56px);border:1px solid #293d54;border-radius:22px;background:#101d2c;color:#edf3fb;box-shadow:0 24px 80px #0005}
+.legal-document .eyebrow{color:#ffd13d;font-size:12px;font-weight:800;letter-spacing:.14em}
+.legal-document h1{margin:10px 0 8px;font-size:clamp(32px,6vw,52px);line-height:1.08;letter-spacing:-.04em}
+.legal-document .updated{margin:0 0 30px;color:#a9b9cd;font-size:13px}
+.legal-document .intro{margin:0 0 30px;color:#d4dfec;font-size:17px;line-height:1.75}
+.legal-document h2{margin:30px 0 10px;color:#fff;font-size:20px}
+.legal-document p,.legal-document li{color:#c3d0df;line-height:1.8}
+.legal-document p+p{margin-top:12px}
+.legal-document ul{padding-left:22px}
+.legal-document li+li{margin-top:7px}
+.legal-document .legal-top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:36px}
+.legal-document .legal-top a{font-size:13px}
+.legal-document .legal-contact{margin-top:32px;padding:20px;border:1px solid #344d68;border-radius:14px;background:#0b1521}
+.legal-document .legal-contact p{margin-top:8px}
+.legal-document .legal-bottom{margin-top:32px;padding-top:20px;border-top:1px solid #293d54}
+.legal-document .legal-bottom .site-footer{margin-top:18px;padding-bottom:0}
+@media(max-width:600px){.site-footer{justify-content:flex-start}.site-footer-links{gap:10px 14px}.legal-document{border-radius:16px}.legal-document .legal-top{align-items:flex-start;flex-direction:column}}

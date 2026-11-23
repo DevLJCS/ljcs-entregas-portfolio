@@ -1,5 +1,10 @@
 // Add significant releases at the top. See AGENTS.md for the release workflow.
 export const releases = [
+  { version: '1.26.0', date: '2026-11-23', title: 'Transparência e canais de suporte', changes: [
+    'O painel e a Central agora exibem links para os termos de uso e a política de privacidade.',
+    'Rodapés apresentam os canais de suporte, os direitos reservados e a autoria de Luan Cordeiro, com acesso ao perfil do GitHub.',
+    'As páginas legais explicam os dados tratados, os serviços externos e como solicitar atendimento ou exercer direitos de privacidade.'
+  ] },
   { version: '1.25.2', date: '2026-11-22', title: 'Dicas nos ícones do menu recolhido', changes: [
     'Ao passar o mouse ou navegar pelo teclado nos ícones da barra lateral recolhida, o nome da seção aparece em uma dica flutuante.'
   ] },

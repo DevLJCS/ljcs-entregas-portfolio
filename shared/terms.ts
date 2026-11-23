@@ -1,5 +1,5 @@
 export const TERMS_VERSION='2026-11-19.2';
-export const PUBLIC_CONTACT={email:'contato@example.invalid',whatsapp:'5500000000000',phone:'Configure um contato público'};
+export const PUBLIC_CONTACT={email:'adm@luancordeirolc.com',whatsapp:'5531996914817',phone:'(31) 99691-4817'};
 export const TERMS = {
   common:[
     ['Sobre o LJCS Entregas','LJCS significa Logística, Jornada, Controle e Segurança. A central conecta estabelecimentos e entregadores nas regiões liberadas pelo administrador, com cadastro, cálculo de entrega, chamadas por proximidade e acompanhamento da operação. O administrador libera cadastros e gerencia os acessos.'],

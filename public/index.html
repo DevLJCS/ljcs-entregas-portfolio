@@ -10,6 +10,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/legal.css">
     <script src="/app.js" type="module"></script>
   <link rel="stylesheet" href="/cinema.css">
   <link rel="stylesheet" href="/neofuturist.css"></head>
@@ -130,6 +131,16 @@
           <div class="page-heading"><div><p class="eyebrow">SEU CAMINHO ATÉ AQUI</p><h1>Histórico</h1><p class="subheading">Confira sua atividade nos últimos 30 dias.</p></div></div>
           <section class="panel"><div class="panel-heading"><div><p class="eyebrow">ÚLTIMOS 30 DIAS</p><h3>Resumo por dia</h3></div></div><div id="history-list" class="history-list"></div></section>
         </section>
+        <footer class="site-footer">
+          <p class="copyright">© 2026 LJCS Entregas. Todos os direitos reservados. Programado por <a href="https://github.com/DevLJCS" target="_blank" rel="noopener noreferrer">Luan Cordeiro</a>.</p>
+          <nav class="site-footer-links" aria-label="Links institucionais">
+            <a href="/termos-de-uso.html">Termos de uso</a>
+            <a href="/politica-de-privacidade.html">Política de privacidade</a>
+            <a href="mailto:adm@luancordeirolc.com">Contato e suporte</a>
+            <a href="https://wa.me/5531996914817" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+            <a href="https://github.com/DevLJCS" target="_blank" rel="noopener noreferrer">GitHub</a>
+          </nav>
+        </footer>
       </main>
     </div>
     <nav class="mobile-nav hidden" aria-label="Navegação inferior">
@@ -154,7 +165,16 @@
         <button id="setup-passkey" class="button button-secondary hidden">Configurar minha passkey</button>
         <div id="setup-token-wrap" class="field hidden"><label for="setup-token">Código inicial de configuração</label><input id="setup-token" type="password" autocomplete="off" placeholder="Cole o código configurado no Cloudflare"></div>
         <p id="login-hint" class="secure-note">A senha deve ter pelo menos 12 caracteres. A passkey continua disponível como alternativa.</p><p class="secure-note"><span data-icon="shield"></span> Seus dados ficam protegidos.</p><p id="login-error" class="form-error" role="alert"></p>
-      </div><div class="login-footer">ADMINISTRAÇÃO · LOJAS · ENTREGADORES</div></div>
+        <footer class="site-footer login-site-footer">
+          <p class="copyright">© 2026 LJCS Entregas. Todos os direitos reservados.<br>Programado por <a href="https://github.com/DevLJCS" target="_blank" rel="noopener noreferrer">Luan Cordeiro</a>.</p>
+          <nav class="site-footer-links" aria-label="Links institucionais">
+            <a href="/termos-de-uso.html">Termos de uso</a>
+            <a href="/politica-de-privacidade.html">Privacidade</a>
+            <a href="mailto:adm@luancordeirolc.com">Contato e suporte</a>
+            <a href="https://github.com/DevLJCS" target="_blank" rel="noopener noreferrer">GitHub</a>
+          </nav>
+        </footer>
+      </div></div>
     </section>
 
     <dialog id="ride-modal" class="modal">

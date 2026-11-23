@@ -16,6 +16,7 @@ Projeto de portfólio de uma aplicação web para gestão financeira de entregad
 - Central de demonstração com perfis de loja, entregador e administração.
 - Autenticação por senha e passkeys, validações no servidor e armazenamento local/offline.
 - Interface futurista responsiva e acessível, com navegação por teclado.
+- Termos de uso, política de privacidade, contato de suporte e autoria vinculada ao GitHub.
 
 ## Tecnologias
 
@@ -63,4 +64,4 @@ Os testes de integração precisam de um Worker local ativo e dados de teste loc
 
 O repositório não contém o arquivo local `wrangler.jsonc`, IDs de recursos, segredos, bancos, logs, backups ou registros pessoais.
 
-Os contatos administrativos do arquivo de termos são exemplos fictícios. Configure seus próprios dados localmente antes de publicar uma instância.
+As páginas públicas de [termos de uso](https://entregas.luancordeirolc.com/termos-de-uso.html) e [privacidade](https://entregas.luancordeirolc.com/politica-de-privacidade.html) descrevem os recursos e canais de suporte da instância publicada. Ao publicar outra instância, revise os contatos, as práticas de dados e os textos legais para refletir sua própria operação.
