@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#080d15">
+    <meta name="description" content="Painel pessoal de entregas, ganhos e despesas.">
+    <title>Entregas — LJCS</title>
+    <link rel="icon" type="image/png" sizes="192x192" href="/logo-ljcs-app-transparent.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" type="module"></script>
+  <link rel="stylesheet" href="/cinema.css">
+  <link rel="stylesheet" href="/neofuturist.css"></head>
+  <body>
+    <div id="boot-status" class="boot-status" role="status"><span class="boot-mark">LJCS<span> / </span>ENTREGAS</span><p>Preparando seu painel…</p></div>
+    <div class="app-shell hidden">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <a class="brand" href="#" aria-label="Entregas LJCS">
+            <span class="brand-copy"><strong><span class="brand-accent">LJCS</span> entregas</strong><small>SEU PAINEL DE CONTROLE</small></span>
+          </a>
+          <button id="sidebar-toggle" class="sidebar-toggle" type="button" aria-label="Recolher menu" aria-expanded="true" title="Recolher menu"><span aria-hidden="true" data-icon="chevronLeft"></span></button>
+        </div>
+        <div class="side-label">MENU</div>
+        <nav class="navigation" aria-label="Navegação principal">
+          <button class="nav-item active" data-view="inicio" aria-label="Visão geral" title="Visão geral"><span class="nav-icon" data-icon="dashboard"></span><span class="nav-label">Visão geral</span></button>
+          <button class="nav-item" data-view="corridas" aria-label="Minhas corridas" title="Minhas corridas"><span class="nav-icon" data-icon="route"></span><span class="nav-label">Minhas corridas</span></button>
+          <button class="nav-item" data-view="despesas" aria-label="Despesas" title="Despesas"><span class="nav-icon" data-icon="receipt"></span><span class="nav-label">Despesas</span></button>
+          <button class="nav-item" data-view="historico" aria-label="Histórico" title="Histórico"><span class="nav-icon" data-icon="history"></span><span class="nav-label">Histórico</span></button>
+        </nav>
+        <div class="side-bottom">
+          <a class="version-link central-link" href="/central/?area=admin" aria-label="Administrar central" title="Administrar central"><span data-icon="building"></span><span class="central-link-label">Administrar central ↗</span></a>
+          <div class="ride-tip"><span class="tip-spark" data-icon="route"></span><strong>Boa rota!</strong><p>Mais uma entrega, mais perto da sua meta.</p></div>
+          <button id="logout" class="logout-button" aria-label="Sair da conta" title="Sair da conta"><span data-icon="logout"></span><span class="logout-label">Sair da conta</span></button>
+          <button class="version-link" data-release-history aria-haspopup="dialog" aria-controls="versions-modal">Novidades e versões</button>
+          <div class="side-foot">FEITO PARA SUA ROTINA <span>•</span> LJCS</div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div class="mobile-brand"><img class="brand-mark" src="/logo-ljcs-app.webp" width="48" height="48" decoding="async" alt=""><strong>entregas</strong></div>
+          <div class="breadcrumbs">Seu corre <span>/</span> <strong id="page-title">Visão geral</strong></div>
+          <div class="top-actions">
+            <div class="date-chip">
+              <button id="dashboard-date-open" type="button" aria-label="Abrir calendário" title="Abrir calendário"><span data-icon="calendar"></span></button>
+              <input id="dashboard-date" aria-label="Data do painel (dd/mm/aaaa)" type="text" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="dd/mm/aaaa">
+              <input id="dashboard-date-picker" type="date" tabindex="-1" aria-hidden="true">
+            </div>
+            <button class="avatar" id="open-profile" aria-label="Editar perfil" title="Editar perfil">L</button>
+          </div>
+          <button class="version-link version-mobile" data-release-history aria-haspopup="dialog" aria-controls="versions-modal">Novidades e versões</button>
+        </header>
+
+        <section id="view-inicio" class="view active">
+          <div class="welcome-row home-hero">
+            <div class="welcome-copy"><p class="eyebrow">SEU DIA, NO SEU RITMO <span class="live-dot"></span></p><h1>Fala, Luan</h1><p class="subheading">Cada entrega conta. Bora acompanhar seu corre?</p></div>
+            <img class="welcome-logo" src="/logo-ljcs-entregas.webp" width="680" height="383" decoding="async" fetchpriority="high" alt="Logo LJCS Gestão de Entregas">
+            <button class="button button-primary" data-open="ride-modal"><span data-icon="plus"></span> Nova corrida</button>
+          </div>
+
+          <section class="goal-card">
+            <div class="goal-main">
+              <div class="goal-title-row"><div><p class="eyebrow light">META DO DIA</p><h2 id="goal-earned">R$ 0,00 <span>faturados</span></h2></div></div>
+              <div class="progress-track"><div id="goal-progress" class="progress-value"></div><span class="progress-marker"></span></div>
+              <div class="goal-foot"><span id="goal-progress-label">0% concluído</span><span id="goal-remaining">Faltam R$ 200,00</span></div>
+            </div>
+            <button id="edit-goal" type="button" class="goal-target" aria-label="Editar meta diária" aria-haspopup="dialog" aria-controls="goal-modal" title="Editar meta diária"><span class="target-icon" aria-hidden="true" data-icon="target"></span><span class="goal-target-copy"><span>OBJETIVO</span><strong id="goal-target">R$ 200,00</strong></span></button>
+          </section>
+
+          <div class="stats-grid">
+            <button type="button" class="stat-card stat-link" data-view="corridas" aria-label="Ver pagamentos recebidos"><span class="stat-top"><span>Recebido hoje</span><span class="stat-icon green" data-icon="trend"></span></span><strong id="stat-gross">R$ 0,00</strong><small>corridas pagas</small></button>
+            <button type="button" class="stat-card stat-link" data-view="corridas" aria-label="Ver pagamentos pendentes"><span class="stat-top"><span>A receber</span><span class="stat-icon coral" data-icon="wallet"></span></span><strong id="stat-pending">R$ 0,00</strong><small>corridas aguardando pagamento</small></button>
+            <button type="button" class="stat-card stat-link" data-view="despesas" aria-label="Ver despesas"><span class="stat-top"><span>Despesas do dia</span><span class="stat-icon coral" data-icon="receipt"></span></span><strong id="stat-expenses">R$ 0,00</strong><small>combustível e outros gastos</small></button>
+            <article class="stat-card highlight"><div class="stat-top"><span>Saldo após despesas</span><span class="stat-icon" data-icon="wallet"></span></div><strong id="stat-net">R$ 0,00</strong><small>faturamento menos gastos pagos</small></article>
+            <button type="button" class="stat-card stat-link" data-view="corridas" aria-label="Ver minhas corridas"><span class="stat-top"><span>Corridas realizadas</span><span class="stat-icon violet" data-icon="motorcycle"></span></span><strong id="stat-rides">0</strong><small>entregas registradas hoje</small></button>
+          </div>
+
+          <div class="productivity-placeholder" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div class="content-grid">
+            <section class="panel recent-panel">
+              <div class="panel-heading"><div><p class="eyebrow">ACOMPANHAMENTO</p><h3>Últimas corridas</h3></div><button class="text-link" data-view="corridas">Ver todas <span data-icon="arrow"></span></button></div>
+              <div id="recent-rides" class="activity-list"></div>
+            </section>
+            <section class="panel quick-panel">
+              <div class="panel-heading"><div><p class="eyebrow">ATALHOS</p><h3>Registrar rapidinho</h3></div><span class="quick-spark" data-icon="plus"></span></div>
+              <button class="quick-action" data-open="ride-modal"><span class="quick-icon delivery" data-icon="motorcycle"></span><span><strong>Nova corrida</strong><small>Adicione um ganho à lista</small></span><b data-icon="arrow"></b></button>
+              <button class="quick-action" data-open="expense-modal"><span class="quick-icon fuel" data-icon="fuel"></span><span><strong>Abastecimento</strong><small>Tanque cheio e quilometragem</small></span><b data-icon="arrow"></b></button>
+              <div class="brand-strip"><span>SEU CORRE COM</span><div class="brand-logos"><span class="wordmark ifood">iFood</span><span class="wordmark rappi">Rappi</span><span class="wordmark ninety">99</span></div></div>
+            </section>
+          </div>
+          <section class="panel fuel-summary">
+            <div class="fuel-badge" data-icon="fuel"></div>
+            <div class="fuel-efficiency-summary"><p class="eyebrow">SEU TANQUE EM MOVIMENTO</p><strong id="fuel-efficiency">— km/L</strong><span>média dos abastecimentos desta moto</span></div>
+            <div class="fuel-gauge"><div class="fuel-gauge-heading"><button type="button" id="open-motorcycles" class="motorcycle-name" title="Trocar ou configurar moto"><span data-icon="motorcycle"></span><strong id="motorcycle-name">Fazer 150</strong><span data-icon="settings"></span></button><span id="fuel-gauge-label">0 de 6 quadrados</span></div><div id="fuel-gauge-bars" class="fuel-gauge-bars" role="group" aria-label="Nível de combustível: 0 de 6 quadrados"></div><span class="fuel-gauge-help" id="fuel-gauge-help">Atualize conforme o painel da sua moto.</span><span class="fuel-gauge-help" id="motorcycle-capacity"></span></div>
+            <button class="text-link" data-view="despesas">Ver despesas <span data-icon="arrow"></span></button>
+          </section>
+        </section>
+
+        <section id="view-corridas" class="view">
+          <div class="page-heading"><div><p class="eyebrow">REGISTRO DO SEU CORRE</p><h1>Minhas corridas</h1><p class="subheading">Acompanhe cada entrega e saiba de onde vem seu faturamento.</p></div><button class="button button-primary" data-open="ride-modal"><span data-icon="plus"></span> Nova corrida</button></div>
+          <section class="panel">
+            <div class="panel-heading"><div><p class="eyebrow">HISTÓRICO DE ENTREGAS</p><h3>Todas as corridas</h3></div><div class="heading-actions"><span class="item-count" id="ride-count">0 registros</span><button class="button button-secondary export-button" data-export="rides"><span data-icon="download"></span> Exportar CSV</button></div></div>
+            <div class="list-filters"><label class="search-field"><span data-icon="search"></span><input id="ride-search" aria-label="Buscar corridas" type="search" placeholder="Buscar estabelecimento ou plataforma"></label><select id="ride-platform-filter" aria-label="Filtrar por plataforma"><option value="">Todas as plataformas</option><option>iFood</option><option>Rappi</option><option>99Food</option><option>Outro</option><option value="direct">Direto / outra</option></select><select id="ride-payment-filter" aria-label="Filtrar por pagamento"><option value="">Todos os pagamentos</option><option value="pending">Pendentes</option><option value="paid">Recebidos</option></select></div>
+            <div class="ride-summary-grid" aria-label="Resumo das corridas">
+              <article class="ride-summary-card"><span>Corridas</span><strong id="ride-summary-count">0</strong><small>na seleção atual</small></article>
+              <article class="ride-summary-card"><span>Valor das corridas</span><strong id="ride-summary-total">R$ 0,00</strong><small>total registrado</small></article>
+              <article class="ride-summary-card"><span>Já recebido</span><strong id="ride-summary-paid">R$ 0,00</strong><small id="ride-summary-paid-count">corridas pagas</small></article>
+              <article class="ride-summary-card ride-summary-pending"><span>Pendente de pagamento</span><strong id="ride-summary-pending">R$ 0,00</strong><small id="ride-summary-pending-count">corridas pendentes</small></article>
+              <article class="ride-summary-card ride-summary-highlight"><span>Mais frequente</span><strong id="ride-summary-top-place">—</strong><small id="ride-summary-top-count">estabelecimento</small></article>
+              <article class="ride-summary-card ride-summary-highlight"><span>Maior corrida</span><strong id="ride-summary-highest">—</strong><small id="ride-summary-highest-place">maior valor recebido</small></article>
+            </div>
+            <div id="all-rides" class="table-wrap"></div>
+          </section>
+        </section>
+
+        <section id="view-despesas" class="view">
+          <div class="page-heading"><div><p class="eyebrow">CONTROLE SEUS CUSTOS</p><h1>Despesas</h1><p class="subheading">Abastecimentos de tanque cheio e outros gastos da sua rotina.</p></div><button class="button button-primary" data-open="expense-modal"><span data-icon="plus"></span> Nova despesa</button></div>
+          <div class="stats-grid expense-stats"><article class="stat-card"><div class="stat-top"><span>Gastos registrados hoje</span><span class="stat-icon coral" data-icon="receipt"></span></div><strong id="expense-today">R$ 0,00</strong><small>total de despesas</small></article><article class="stat-card"><div class="stat-top"><span>Consumo médio</span><span class="stat-icon green" data-icon="gauge"></span></div><strong id="fuel-today">— km/L</strong><small>com base nos tanques registrados</small></article></div>
+          <section class="panel">
+            <div class="panel-heading"><div><p class="eyebrow">SAÍDAS REGISTRADAS</p><h3>Despesas recentes</h3></div><button class="button button-secondary export-button" data-export="expenses"><span data-icon="download"></span> Exportar CSV</button></div>
+            <div class="list-filters"><label class="search-field"><span data-icon="search"></span><input id="expense-search" aria-label="Buscar despesas" type="search" placeholder="Buscar despesa ou posto"></label><select id="expense-kind-filter" aria-label="Filtrar despesas"><option value="">Todos os tipos</option><option value="fuel">Combustível</option><option value="other">Outras despesas</option></select></div>
+            <div id="all-expenses" class="table-wrap"></div>
+          </section>
+        </section>
+
+        <section id="view-historico" class="view">
+          <div class="page-heading"><div><p class="eyebrow">SEU CAMINHO ATÉ AQUI</p><h1>Histórico</h1><p class="subheading">Confira sua atividade nos últimos 30 dias.</p></div></div>
+          <section class="panel"><div class="panel-heading"><div><p class="eyebrow">ÚLTIMOS 30 DIAS</p><h3>Resumo por dia</h3></div></div><div id="history-list" class="history-list"></div></section>
+        </section>
+      </main>
+    </div>
+    <nav class="mobile-nav hidden" aria-label="Navegação inferior">
+      <button class="mobile-nav-item active" data-view="inicio"><span data-icon="dashboard"></span>Início</button>
+      <button class="mobile-nav-item" data-view="corridas"><span data-icon="route"></span>Corridas</button>
+      <button class="mobile-nav-item" data-view="despesas"><span data-icon="receipt"></span>Despesas</button>
+      <button class="mobile-nav-item" data-view="historico"><span data-icon="history"></span>Histórico</button>
+    </nav>
+
+    <section id="login-screen" class="login-screen hidden">
+      <div class="login-art"><div class="art-logo">LJCS</div><p class="brand-acronym"><b>L</b>ogística · <b>J</b>ornada · <b>C</b>ontrole · <b>S</b>egurança</p><img class="login-identity" src="/logo-ljcs-entregas.webp" width="680" height="383" alt="LJCS Gestão de Entregas — moto, entregador e rota"><div class="art-copy"><span>LOJAS E ENTREGADORES CONECTADOS</span><h2>O corre é seu.<br>O controle também.</h2><p>Uma central para solicitar, entregar e gerenciar.</p></div><div class="art-brand">LJCS <span>•</span> GESTÃO DE ENTREGAS</div></div>
+      <div class="login-side">            <div class="login-form"><div class="mobile-brand login-brand"><img class="brand-mark" src="/logo-ljcs-app.webp" width="48" height="48" decoding="async" alt="LJCS"><span><strong>LJCS Entregas</strong><small>Logística · Jornada · Controle · Segurança</small></span></div><span class="login-lock" data-icon="shield"></span><p class="eyebrow">ACESSO LJCS ENTREGAS</p><h1 id="login-title">Boas-vindas<br>de volta.</h1><p id="login-description">Entre com seu e-mail e senha ou use sua passkey.</p>
+        <form id="password-login-form">
+          <div id="password-login-fields">
+            <div class="field"><label for="login-email">E-mail</label><input id="login-email" name="email" type="email" maxlength="254" autocomplete="username" placeholder="voce@exemplo.com" required></div>
+            <div class="field"><label for="login-password">Senha</label><input id="login-password" name="password" type="password" maxlength="1024" autocomplete="current-password" placeholder="Sua senha" required></div>
+            <button id="password-login" class="button button-primary login-button">Entrar com e-mail <span data-icon="arrow"></span></button>
+          </div>
+        </form>
+        <button id="passkey-login" class="button button-secondary login-button hidden">Entrar com passkey <span data-icon="key"></span></button>
+        <a class="button button-secondary login-button central-link" href="/central/?cadastro=1">Criar conta · Loja ou entregador ↗</a>
+        <button id="setup-passkey" class="button button-secondary hidden">Configurar minha passkey</button>
+        <div id="setup-token-wrap" class="field hidden"><label for="setup-token">Código inicial de configuração</label><input id="setup-token" type="password" autocomplete="off" placeholder="Cole o código configurado no Cloudflare"></div>
+        <p id="login-hint" class="secure-note">A senha deve ter pelo menos 12 caracteres. A passkey continua disponível como alternativa.</p><p class="secure-note"><span data-icon="shield"></span> Seus dados ficam protegidos.</p><p id="login-error" class="form-error" role="alert"></p>
+      </div><div class="login-footer">ADMINISTRAÇÃO · LOJAS · ENTREGADORES</div></div>
+    </section>
+
+    <dialog id="ride-modal" class="modal">
+      <form id="ride-form" class="modal-card">
+        <div class="modal-heading"><div><p class="eyebrow">NOVO REGISTRO</p><h2>Adicionar corrida</h2></div><button type="button" class="close-modal" aria-label="Fechar" data-icon="close"></button></div>
+        <div class="form-grid">
+          <div class="field"><label for="ride-date">Data e horário</label><input id="ride-date" name="occurredAt" type="datetime-local" required></div>
+          <div class="field"><label for="ride-value">Valor da corrida</label><div class="money-input"><span>R$</span><input id="ride-value" name="amount" type="number" step="0.01" min="0.01" placeholder="0,00" required></div></div>
+          <div class="field"><label for="ride-establishment">Estabelecimento</label><input id="ride-establishment" name="establishment" maxlength="100" placeholder="Ex.: Pizzaria do bairro" required></div>
+          <div class="field"><label for="ride-platform">Plataforma <span class="optional">opcional</span></label><select id="ride-platform" name="platform"><option value="">Direto / outra</option><option>iFood</option><option>Rappi</option><option>99Food</option><option>Outro</option></select></div>
+          <div class="field"><label for="ride-paid">Situação do pagamento</label><select id="ride-paid" name="paid"><option value="pending">Ainda não recebi</option><option value="paid">Pagamento recebido</option></select></div>
+          <div class="field full"><label for="ride-note">Observação <span class="optional">opcional</span></label><input id="ride-note" name="note" maxlength="300" placeholder="Algum detalhe que queira guardar?"></div>
+        </div>
+        <div class="modal-actions"><button type="button" class="button button-quiet close-modal">Cancelar</button><button class="button button-primary">Salvar corrida <span data-icon="arrow"></span></button></div>
+      </form>
+    </dialog>
+
+    <dialog id="expense-modal" class="modal">
+      <form id="expense-form" class="modal-card">
+        <div class="modal-heading"><div><p class="eyebrow">NOVO REGISTRO</p><h2>Adicionar despesa</h2></div><button type="button" class="close-modal" aria-label="Fechar" data-icon="close"></button></div>
+        <div class="field"><label for="expense-kind">Tipo de despesa</label><select id="expense-kind" name="kind"><option value="fuel">Combustível • tanque cheio</option><option value="other">Outra despesa</option></select></div>
+        <div class="form-grid">
+          <div class="field"><label for="expense-date">Data e horário</label><input id="expense-date" name="occurredAt" type="datetime-local" required></div>
+          <div class="field"><label for="expense-value">Valor pago</label><div class="money-input"><span>R$</span><input id="expense-value" name="amount" type="number" step="0.01" min="0.01" placeholder="0,00" required></div></div>
+          <div class="field full"><label for="expense-title" id="expense-title-label">Posto / combustível</label><input id="expense-title" name="title" maxlength="100" placeholder="Nome do posto" required></div>
+          <div id="fuel-fields" class="form-grid full">
+            <div class="field full"><label for="fuel-mileage-mode">Quilometragem informada</label><select id="fuel-mileage-mode"><option value="odometer">Leitura atual do painel (odômetro)</option><option value="distance">Distância desde o último abastecimento</option></select></div>
+            <div id="fuel-odometer-field" class="field"><label for="fuel-odometer">Km atual no painel</label><div class="unit-input"><input id="fuel-odometer" name="odometerKm" type="number" step="0.1" min="0" max="999999" placeholder="Ex.: 28709"><span>km</span></div></div>
+            <div id="fuel-distance-field" class="field hidden"><label for="fuel-distance">Km desde o último abastecimento</label><div class="unit-input"><input id="fuel-distance" name="distanceKm" type="number" step="0.1" min="0.1" max="5000" placeholder="Ex.: 245"><span>km</span></div></div>
+            <div class="field"><label for="fuel-liters">Litros abastecidos</label><div class="unit-input"><input id="fuel-liters" name="liters" type="number" step="0.01" min="0.01" placeholder="Ex.: 9,5"><span>L</span></div></div>
+            <label class="check-row full"><input id="tank-full" type="checkbox"><span class="custom-check"></span><span>Confirmei: abasteci até encher o tanque</span></label>
+          </div>
+        </div>
+        <div class="modal-actions"><button type="button" class="button button-quiet close-modal">Cancelar</button><button class="button button-primary">Salvar despesa <span data-icon="arrow"></span></button></div>
+      </form>
+    </dialog>
+
+    <dialog id="goal-modal" class="modal">
+      <form id="goal-form" class="modal-card">
+        <div class="modal-heading"><div><p class="eyebrow">SEU OBJETIVO</p><h2>Editar meta diária</h2></div><button type="button" class="close-modal" aria-label="Fechar" data-icon="close"></button></div>
+        <div class="field"><label for="goal-value">Quanto quer faturar por dia?</label><div class="money-input"><span>R$</span><input id="goal-value" type="number" step="0.01" min="0.01" required></div></div>
+        <div class="modal-actions"><button type="button" class="button button-quiet close-modal">Cancelar</button><button class="button button-primary">Atualizar meta</button></div>
+      </form>
+    </dialog>
+    <dialog id="confirm-modal" class="modal">
+      <form method="dialog" class="modal-card">
+        <div class="modal-heading"><div><p class="eyebrow">CONFIRMAR AÇÃO</p><h2 id="confirm-title">Excluir registro?</h2></div><button class="close-modal" aria-label="Fechar" data-icon="close"></button></div>
+        <p id="confirm-message" class="subheading">Esta ação não pode ser desfeita.</p>
+        <div class="modal-actions"><button class="button button-quiet" value="cancel">Cancelar</button><button id="confirm-delete" class="button button-primary" value="confirm">Excluir <span data-icon="trash"></span></button></div>
+      </form>
+    </dialog>
+    <dialog id="profile-modal" class="modal">
+      <form id="profile-form" class="modal-card">
+        <div class="modal-heading"><div><p class="eyebrow">SUA CONTA</p><h2>Editar perfil</h2></div><button type="button" class="close-modal" aria-label="Fechar" data-icon="close"></button></div>
+        <div class="field"><label for="profile-name">Nome</label><input id="profile-name" name="displayName" maxlength="60" autocomplete="name" required></div>
+        <div class="field"><label for="profile-email">E-mail de login</label><input id="profile-email" name="email" type="email" maxlength="254" autocomplete="email" required></div>
+        <div id="current-password-field" class="field hidden"><label for="profile-current-password">Senha atual <span class="optional">necessária para trocar e-mail ou senha</span></label><input id="profile-current-password" name="currentPassword" type="password" maxlength="1024" autocomplete="current-password"></div>
+        <div class="field"><label for="profile-new-password">Nova senha <span class="optional">opcional</span></label><input id="profile-new-password" name="newPassword" type="password" minlength="12" maxlength="1024" autocomplete="new-password" placeholder="Pelo menos 12 caracteres"></div>
+        <div class="field"><label for="profile-confirm-password">Confirme a nova senha</label><input id="profile-confirm-password" name="confirmPassword" type="password" minlength="12" maxlength="1024" autocomplete="new-password" placeholder="Digite a nova senha novamente"></div>
+        <button type="button" id="manage-emails" class="button button-secondary">Gerenciar e-mails vinculados</button>
+        <button type="button" id="manage-passkeys" class="button button-secondary">Gerenciar e adicionar passkeys</button>
+        <p id="profile-message" class="form-error" role="alert"></p>
+        <div class="modal-actions"><button type="button" class="button button-quiet close-modal">Cancelar</button><button class="button button-primary">Salvar perfil <span data-icon="arrow"></span></button></div>
+      </form>
+    </dialog>
+    <dialog id="versions-modal" class="modal versions-modal" aria-labelledby="versions-title">
+      <div class="modal-card">
+        <div class="modal-heading"><div><p class="eyebrow">EVOLUÇÃO DO SEU PAINEL</p><h2 id="versions-title">Novidades e versões</h2></div><button type="button" class="close-modal" aria-label="Fechar" data-icon="close"></button></div>
+        <p class="subheading">Acompanhe as mudanças significativas, das mais recentes às primeiras melhorias.</p>
+        <div id="release-list" class="release-list"></div>
+        <p class="release-footnote">As versões 1.0 a 1.3 foram organizadas retrospectivamente a partir das primeiras melhorias.</p>
+        <div class="modal-actions"><button type="button" class="button button-primary close-modal">Entendi</button></div>
+      </div>
+    </dialog>
+    <div id="toast" class="toast" role="status"></div>
+  </body>
+</html>

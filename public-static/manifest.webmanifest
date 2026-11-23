@@ -1,0 +1,29 @@
+{
+  "name": "LJCS Gestão de Entregas",
+  "short_name": "LJCS Entregas",
+  "description": "Painel pessoal de entregas, ganhos e despesas.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080d15",
+  "theme_color": "#080d15",
+  "icons": [
+    {
+      "src": "/logo-ljcs-app-transparent.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

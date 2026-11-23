@@ -1,0 +1,27 @@
+import {ensurePilot} from './pilot-fixture.mjs';
+await ensurePilot('http://127.0.0.1:8787');
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+await build({entryPoints:['src/subscription-rules.ts'],bundle:true,platform:'node',format:'esm',outfile:'outputs/report-rules-test.mjs'});
+const {reportRange}=await import('../outputs/report-rules-test.mjs');
+const instant=Date.parse('2026-11-19T02:30:00Z');
+assert.equal(reportRange('normal','7',null,null,instant).to,'2026-11-18');assert.equal(reportRange('normal','7',null,null,instant).from,'2026-11-12');assert.throws(()=>reportRange('basic','7',null,null));assert.throws(()=>reportRange('normal',null,'2026-11-01','2026-11-02'));assert.throws(()=>reportRange('premium',null,'2026-99-99','2026-11-19'));assert.throws(()=>reportRange('premium',null,'2026-01-01','2026-11-19'));assert.throws(()=>reportRange('premium',null,'2026-11-19','2030-11-19'));
+const base='http://127.0.0.1:8787',run=crypto.randomUUID(),headers={'Origin':base,'Content-Type':'application/json','CF-Connecting-IP':run};
+async function req(path,body,cookie='',method=body?'POST':'GET'){const r=await fetch(base+'/api/central'+path,{method,headers:{...headers,Cookie:cookie},body:body?JSON.stringify(body):undefined});return {status:r.status,data:r.headers.get('content-type')?.includes('text/csv')?await r.text():await r.json(),cookie:r.headers.get('set-cookie')?.split(';')[0]};}
+const login=await fetch(base+'/api/auth/login/password',{method:'POST',headers,body:JSON.stringify({email:'design@example.invalid',password:'LocalDesignTest2026!'})});assert.equal(login.status,200);const owner=login.headers.get('set-cookie').split(';')[0];
+const address={street:'Rua teste',number:'100',district:'Centro',city:'Jaú',state:'SP',lat:-22.2965,lng:-48.557};
+async function create(role,index){const email=`${run}-${index}@example.invalid`,password='RelatoriosLocal2026!';assert.equal((await req('/register',{city:'Jaú',state:'SP',acceptTerms:true,termsVersion:'2026-11-19.2',role,email,password,name:role==='store'?'=1+1':'Relatório teste '+index,responsible:'Teste',phone:'14999990000',plan:'basic',address})).status,200);const r=await req('/login',{email,password});await req('/approve-account',{id:r.data.user.id,approved:true},owner);return {id:r.data.user.id,cookie:r.cookie};}
+const driver=await create('driver',0),other=await create('driver',1),store=await create('store',2);
+const until=new Date(Date.now()+7*86400000).toISOString();async function grant(d,plan,revision){assert.equal((await req('/subscription',{action:'access',userId:d.id,revision,plan,validUntil:until,revoked:false},owner)).status,200);}
+await grant(driver,'basic',0);await grant(other,'premium',0);
+assert.equal((await req('/report?days=7')).status,401);assert.equal((await req('/report?days=7',undefined,store.cookie)).status,403);assert.equal((await req('/report?days=7',undefined,driver.cookie)).status,403);
+await grant(driver,'normal',1);assert.equal((await req('/report.csv?days=7',undefined,driver.cookie)).status,403);assert.equal((await req('/report?days=7',undefined,driver.cookie)).data.count,0);
+assert.equal((await req('/heartbeat',{online:true,lat:address.lat,lng:address.lng,geoAt:Date.now(),accuracy:10},driver.cookie)).status,200);
+const quote=await req('/quote',{destination:address},store.cookie);let amount=quote.data.amount;if(amount===null){amount=1200;await req('/approve-quote',{id:quote.data.id,amount},owner);}const order=await req('/orders',{quoteId:quote.data.id,clientId:crypto.randomUUID()},store.cookie);assert.equal(order.status,200);assert.equal((await req('/answer',{id:order.data.id,accept:true},driver.cookie)).status,200);assert.equal((await req('/complete',{id:order.data.id},driver.cookie)).status,200);
+let r=await req('/report?days=7&driverId='+other.id,undefined,driver.cookie);assert.equal(r.status,200);assert.equal(r.data.count,1);assert.equal(r.data.total,amount);assert.equal(r.data.average,amount);assert.equal(r.data.daily.reduce((s,d)=>s+d.total,0),amount);assert.equal((await req('/report?days=7',undefined,other.cookie)).data.count,0);
+const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(Date.now());assert.equal((await req(`/report?from=${today}&to=${today}`,undefined,driver.cookie)).status,400);
+await grant(driver,'premium',2);r=await req(`/report?from=${today}&to=${today}`,undefined,driver.cookie);assert.equal(r.status,200);assert.equal(r.data.total,amount);assert.equal(r.data.exportAllowed,true);
+const csv=await req(`/report.csv?from=${today}&to=${today}`,undefined,driver.cookie);assert.equal(csv.status,200);assert.ok(csv.data.includes("'=1+1"));assert.ok(csv.data.includes((amount/100).toFixed(2).replace('.',',')));
+assert.equal((await req('/report?days=365',undefined,driver.cookie)).status,400);assert.equal((await req('/report?from=2026-99-99&to=2026-11-19',undefined,driver.cookie)).status,400);
+await req('/subscription',{action:'revoke',userId:driver.id,revision:3},owner);assert.equal((await req('/report?days=7',undefined,driver.cookie)).status,403);assert.equal((await req('/report.csv?days=7',undefined,driver.cookie)).status,403);
+console.log('OK: plan entitlements, São Paulo date ranges, completed delivery totals, daily totals, account isolation, premium CSV and spreadsheet formula escaping, custom dates and revoked subscriptions.');

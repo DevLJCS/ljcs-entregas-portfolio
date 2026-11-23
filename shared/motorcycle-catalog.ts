@@ -1,0 +1,6 @@
+export const motorcycleCatalog = [
+ {key:'cg-fan-2026',brand:'Honda',model:'CG 160 Fan',year:2026,tankLiters:14,reserveLiters:2.5,gaugeType:'bars',segments:null,source:'https://www.honda.com.br/motos/street/city/cg-160-fan',gaugeSource:'https://www.honda.com.br/pos-venda/motos/sites/customer_service_motos/files/manuais/MP%20CG%20160%20Fan-Titan%20%282025~2026%29%20D2203-MAN-1332_WEB_0.pdf'},
+ {key:'cg-titan-2026',brand:'Honda',model:'CG 160 Titan',year:2026,tankLiters:14,reserveLiters:2.5,gaugeType:'bars',segments:null,source:'https://www.honda.com.br/motos/street/city/cg-160-titan',gaugeSource:'https://www.honda.com.br/pos-venda/motos/sites/customer_service_motos/files/manuais/MP%20CG%20160%20Fan-Titan%20%282025~2026%29%20D2203-MAN-1332_WEB_0.pdf'},
+ {key:'factor-2026',brand:'Yamaha',model:'Factor 150',year:2026,tankLiters:15.4,reserveLiters:null,gaugeType:null,segments:null,source:'https://www.yamaha-motor.com.br/noticia/163/yamaha-factor-chega-a-linha-2026',gaugeSource:null},
+ {key:'biz-2024',brand:'Honda',model:'Biz 125',year:2024,tankLiters:5.1,reserveLiters:null,gaugeType:null,segments:null,source:'https://www.honda.com.br/pos-venda/motos/sites/customer_service_motos/files/manuais/MP%20BIZ125%20%282023~2024%29%20D2203-MAN-1308_WEB.pdf',gaugeSource:null}
+];

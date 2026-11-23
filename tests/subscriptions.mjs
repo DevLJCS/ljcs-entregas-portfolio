@@ -1,0 +1,44 @@
+import {ensurePilot} from './pilot-fixture.mjs';
+await ensurePilot('http://127.0.0.1:8787');
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+await build({entryPoints:['src/subscription-rules.ts'],bundle:true,platform:'node',format:'esm',outfile:'outputs/subscription-rules-test.mjs'});
+const {PLANS,access,renewedUntil,planId,accessDate}=await import('../outputs/subscription-rules-test.mjs');
+assert.deepEqual(Object.values(PLANS).map(p=>p.weeklyCents),[1000,2500,5000]);
+const now=Date.now(),week=7*86400000;
+assert.equal(renewedUntil(now+week,now,1),now+2*week);assert.equal(renewedUntil(now-week,now,1),now+week);assert.throws(()=>renewedUntil(now,now,0));assert.throws(()=>planId('__proto__'));
+const s={plan:'basic',valid_until:now,revoked:0,revision:1};assert.equal(access(s,true,now).status,'expired');assert.equal(access({...s,valid_until:now+1},true,now).active,true);assert.equal(access({...s,revoked:1},true,now).status,'revoked');assert.equal(access(undefined,true).status,'pending_payment');assert.throws(()=>accessDate('2026-11-19T10:00',now));assert.equal(accessDate('2026-11-19T10:00:00-03:00',now),Date.parse('2026-11-19T13:00:00Z'));
+const base='http://127.0.0.1:8787',run=crypto.randomUUID(),headers={'Origin':base,'Content-Type':'application/json','CF-Connecting-IP':run};
+async function req(path,body,cookie='',method=body?'POST':'GET'){const r=await fetch(base+'/api/central'+path,{method,headers:{...headers,Cookie:cookie},body:body?JSON.stringify(body):undefined});return {status:r.status,data:await r.json(),cookie:r.headers.get('set-cookie')?.split(';')[0]};}
+const login=await fetch(base+'/api/auth/login/password',{method:'POST',headers,body:JSON.stringify({email:'design@example.invalid',password:'LocalDesignTest2026!'})});assert.equal(login.status,200);const owner=login.headers.get('set-cookie').split(';')[0];
+const a={cep:'17201-000',street:'Rua de teste',number:'100',district:'Centro',city:'Jaú',state:'SP',complement:'',lat:-22.2965,lng:-48.557};
+async function create(role,index,plan='basic'){const email=`${run}-${index}@example.invalid`,password='TesteSemanalLocal123!';assert.equal((await req('/register',{city:'Jaú',state:'SP',acceptTerms:true,termsVersion:'2026-11-19.2',email,password,role,plan,name:`Semanal teste ${index}`,responsible:'Teste',phone:'14999990000',address:a})).status,200);const login=await req('/login',{email,password});assert.equal(login.status,200);return {cookie:login.cookie,id:login.data.user.id};}
+const d1=await create('driver',0),d2=await create('driver',1,'premium'),store=await create('store',2);
+assert.equal((await req('/me',undefined,d1.cookie)).data.user.subscription.status,'pending_approval');
+for(const u of [d1,d2,store])await req('/approve-account',{id:u.id,approved:true},owner);
+assert.equal((await req('/orders',undefined,d1.cookie)).status,403);
+assert.equal((await req('/subscription',undefined,d1.cookie)).data.subscription.status,'pending_payment');
+const p={action:'payment',userId:d1.id,revision:0,plan:'basic',weeks:1,amount:1000,paidAt:new Date().toISOString(),clientId:crypto.randomUUID(),note:'Pagamento de teste LOCAL'};
+assert.equal((await req('/subscription',p,store.cookie)).status,403);assert.equal((await req('/subscription',p,d1.cookie)).status,403);
+const paid=await req('/subscription',p,owner);assert.equal(paid.status,200);assert.equal(paid.data.subscription.status,'active');assert.ok(Math.abs(paid.data.subscription.validUntil-Date.now()-week)<1000);
+const replay=await req('/subscription',p,owner);assert.equal(replay.status,200);assert.equal(replay.data.subscription.validUntil,paid.data.subscription.validUntil);assert.equal((await req('/subscription',undefined,d1.cookie)).data.payments.length,1);
+assert.equal((await req('/subscription',{...p,clientId:crypto.randomUUID()},owner)).status,409);
+assert.equal((await req('/subscription',{...p,revision:1,plan:'fake',clientId:crypto.randomUUID()},owner)).status,400);
+const renewed=await req('/subscription',{...p,revision:1,plan:'normal',amount:2500,clientId:crypto.randomUUID()},owner);assert.equal(renewed.status,200);assert.equal(renewed.data.subscription.validUntil,paid.data.subscription.validUntil+week);
+const parallel=await Promise.all([1,2].map(()=>req('/subscription',{...p,revision:2,clientId:crypto.randomUUID()},owner)));assert.deepEqual(parallel.map(r=>r.status).sort(),[200,409]);
+assert.equal((await req('/subscription',{action:'revoke',userId:d1.id,revision:3},owner)).status,200);assert.equal((await req('/orders',undefined,d1.cookie)).status,403);assert.equal((await req('/subscription',undefined,d1.cookie)).data.subscription.status,'revoked');
+assert.equal((await req('/subscription',undefined,d2.cookie)).data.payments.length,0);
+const historyCount=(await req('/subscription',undefined,d1.cookie)).data.payments.length;
+async function grant(d,revision,validUntil){return req('/subscription',{action:'access',userId:d.id,revision,plan:d===d2?'premium':'basic',validUntil:new Date(validUntil).toISOString(),revoked:false},owner);}
+assert.equal((await grant(d1,4,Date.now()+2500)).status,200);assert.equal((await grant(d2,0,Date.now()+week)).status,200);assert.equal((await req('/subscription',undefined,d1.cookie)).data.payments.length,historyCount,'access adjustment must not invent a payment');
+for(const [i,d]of [d1,d2].entries())assert.equal((await req('/heartbeat',{online:true,lat:a.lat+0.001*(i+1),lng:a.lng,geoAt:Date.now(),accuracy:10},d.cookie)).status,200);
+const quote=await req('/quote',{destination:a},store.cookie);assert.equal(quote.status,200);if(quote.data.amount===null)await req('/approve-quote',{id:quote.data.id,amount:1000},owner);
+const order=await req('/orders',{quoteId:quote.data.id,clientId:crypto.randomUUID()},store.cookie);assert.equal(order.status,200);assert.ok((await req('/orders',undefined,d1.cookie)).data.orders.some(o=>o.id===order.data.id),'basic nearest driver must precede premium farther driver');
+await new Promise(r=>setTimeout(r,2800));
+assert.equal((await req('/orders',undefined,d1.cookie)).status,403);assert.equal((await req('/me',undefined,d1.cookie)).data.user.subscription.status,'expired');assert.ok((await req('/orders',undefined,d2.cookie)).data.orders.some(o=>o.id===order.data.id),'expired offer must move to active driver');
+assert.equal((await req('/answer',{id:order.data.id,accept:true},d1.cookie)).status,403);
+assert.equal((await req('/subscription',{action:'revoke',userId:d2.id,revision:1},owner)).status,200);assert.equal((await req('/answer',{id:order.data.id,accept:true},d2.cookie)).status,403);
+await req('/cancel',{id:order.data.id},store.cookie);
+const admin=(await req('/admin',undefined,owner)).data;assert.equal(admin.accounts.find(a=>a.id===d1.id).online,0);assert.ok(admin.subscriptionEvents.some(e=>e.user_id===d2.id&&e.event==='revoke'));assert.equal(admin.payments.filter(p=>p.user_id===d1.id).length,3);
+assert.equal((await req('/me')).data.user,null);
+console.log('OK: plan prices, weekly renewal, manual payments, idempotency, revisions, concurrency, adjustments without payments, owner permissions, history isolation, exact expiry, revocation and nearest-first eligibility.');

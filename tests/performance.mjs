@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {readFileSync,readdirSync,statSync} from 'node:fs';
+const html=readFileSync('dist/index.html','utf8');
+assert.ok(!html.includes('logo-ljcs-entregas.png'));
+assert.ok(html.includes('width="680" height="383"'));
+const hero=readdirSync('dist/assets').find(f=>f.endsWith('.webp'));
+assert.ok(statSync('dist/assets/'+hero).size<70000);
+const root=await fetch('http://127.0.0.1:8787/');assert.equal(root.status,200);assert.match(root.headers.get('cache-control'),/no-cache/);
+const js=readdirSync('dist/assets').find(f=>f.endsWith('.js'));
+const asset=await fetch('http://127.0.0.1:8787/assets/'+js);assert.equal(asset.status,200);assert.match(asset.headers.get('cache-control'),/immutable/);
+const api=await fetch('http://127.0.0.1:8787/api/dashboard');assert.equal(api.status,401);assert.equal(api.headers.get('cache-control'),'no-store');
+console.log('OK: optimized hero size/dimensions, immutable hashed assets, revalidated HTML, private API remains no-store.');

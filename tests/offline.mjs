@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict';
+const storage=new Map();globalThis.localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)};
+Object.defineProperty(globalThis,'navigator',{value:{onLine:true},configurable:true});
+const label={textContent:''},badge={innerHTML:'',state:'',setAttribute:(key,value)=>{if(key==='data-state')badge.state=value;}};globalThis.document={getElementById:id=>id==='sync-icon'?badge:label,dispatchEvent:()=>{}};
+const {offlineApi,syncPending,clearOffline,hasOfflineDashboard}=await import('../public/offline.js');
+globalThis.fetch=async()=>Response.json({date:'2026-11-18',rides:[]});await offlineApi('/api/dashboard?date=2026-11-18');assert.equal(hasOfflineDashboard(),true);assert.equal(badge.state,'synced');assert.match(badge.innerHTML,/<svg/);
+globalThis.fetch=async()=>{throw new TypeError('offline');};assert.equal((await offlineApi('/api/dashboard?date=2026-11-18')).date,'2026-11-18');
+assert.equal((await offlineApi('/api/rides',{method:'POST',body:JSON.stringify({amount:12})})).queued,true);
+let queue=JSON.parse(storage.get('ljcs-pending-v1'));assert.equal(queue.length,1);const id=JSON.parse(queue[0].options.body).clientId;assert.ok(id);assert.equal(badge.state,'pending');
+await assert.rejects(offlineApi('/api/profile',{method:'PUT',body:'{}'}));
+globalThis.fetch=async path=>path==='/api/auth/me'?Response.json({authenticated:false}):Response.json({});await syncPending();assert.equal(JSON.parse(storage.get('ljcs-pending-v1')).length,1);
+let syncedId;globalThis.fetch=async(path,opts)=>{if(path==='/api/auth/me')return Response.json({authenticated:true});syncedId=JSON.parse(opts.body).clientId;return Response.json({saved:true});};await syncPending();assert.equal(syncedId,id);assert.equal(badge.state,'synced');assert.equal(JSON.parse(storage.get('ljcs-pending-v1')).length,0);
+clearOffline();assert.equal(hasOfflineDashboard(),false);console.log('OK: offline cache, durable queue, authenticated replay, stable submission ID, unsupported write blocked, logout cache cleanup.');
+
+// Automatic retries also cover transient server errors without an online event.
+globalThis.fetch=async()=>Response.json({error:'Temporary failure'},{status:503});
+assert.equal((await offlineApi('/api/rides',{method:'POST',body:JSON.stringify({amount:9})})).queued,true);
+assert.equal(JSON.parse(storage.get('ljcs-pending-v1')).length,1);
+const windowEvents={}, documentEvents={};let periodic, refreshes=0;
+globalThis.window={addEventListener:(name,fn)=>windowEvents[name]=fn};
+globalThis.document={visibilityState:'visible',getElementById:()=>label,createElement:()=>({}),querySelector:()=>({prepend:()=>{}}),addEventListener:(name,fn)=>documentEvents[name]=fn,dispatchEvent:e=>{if(e.type==='ljcs-cloud-refresh')refreshes++;}};
+const originalInterval=globalThis.setInterval;
+globalThis.setInterval=(fn,delay)=>{assert.equal(delay,30000);periodic=fn;return 1;};
+const {initOffline}=await import('../public/offline.js');initOffline();
+assert.ok(windowEvents.online);assert.ok(windowEvents.focus);assert.ok(documentEvents.visibilitychange);
+globalThis.fetch=async path=>Response.json(path==='/api/auth/me'?{authenticated:true}:{saved:true});
+await periodic();assert.equal(JSON.parse(storage.get('ljcs-pending-v1')).length,0);assert.equal(refreshes,1);
+await windowEvents.focus();assert.equal(refreshes,2);
+await windowEvents.online();assert.equal(refreshes,3);
+globalThis.setInterval=originalInterval;
+console.log('OK: automatic periodic retry, reconnect/focus hooks, cloud refresh and transient 503 recovery.');

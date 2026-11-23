@@ -1,0 +1,40 @@
+import {ensurePilot} from './pilot-fixture.mjs';
+await ensurePilot('http://127.0.0.1:8787');
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+await build({entryPoints:['src/central-rules.ts'],bundle:true,platform:'node',format:'esm',outfile:'outputs/central-rules-test.mjs'});
+const {classify,rate,distance}=await import('../outputs/central-rules-test.mjs');
+assert.equal(classify(-22.2965,-48.557),'urban');assert.equal(classify(0,0),'outside');
+const rural=[-22.20,-48.55];assert.equal(classify(...rural),'rural');
+for(const [time,expected] of [['2026-11-19T02:59:00Z',1000],['2026-11-19T03:00:00Z',1200],['2026-11-19T04:00:00Z',1300],['2026-11-19T07:59:00Z',1300],['2026-11-19T08:00:00Z',1000]])assert.equal(rate(Date.parse(time),false,false),expected);
+assert.equal(rate(Date.parse('2026-11-19T04:00:00Z'),true,true),1500);assert.equal(rate(Date.parse('2026-11-19T15:00:00Z'),true,false),1100);assert.equal(distance(0,0,0,0),0);
+const base='http://127.0.0.1:8787',run=crypto.randomUUID(),headers={'Origin':base,'Content-Type':'application/json','CF-Connecting-IP':run};
+async function req(path,body,cookie='',method=body?'POST':'GET'){const r=await fetch(base+'/api/central'+path,{method,headers:{...headers,Cookie:cookie},body:body?JSON.stringify(body):undefined});return {status:r.status,data:await r.json(),cookie:r.headers.get('set-cookie')?.split(';')[0]};}
+const ownerLogin=await fetch(base+'/api/auth/login/password',{method:'POST',headers,body:JSON.stringify({email:'design@example.invalid',password:'LocalDesignTest2026!'})});assert.equal(ownerLogin.status,200);const owner=ownerLogin.headers.get('set-cookie').split(';')[0];
+assert.equal((await req('/admin')).status,401);
+const a={cep:'17201-000',street:'Rua de teste',number:'100',district:'Centro',city:'Jaú',state:'SP',complement:'',lat:-22.2965,lng:-48.557};
+async function account(role,index){const email=`${run}-${index}@example.invalid`,password='TesteCentralLocal123!';assert.equal((await req('/register',{city:'Jaú',state:'SP',acceptTerms:true,termsVersion:'2026-11-19.2',role,email,password,name:`Teste ${role} ${index}`,responsible:'Pessoa de teste',phone:'14999990000',address:a})).status,200);const login=await req('/login',{email,password});assert.equal(login.status,200);return login.cookie;}
+const store=await account('store',0),store2=await account('store',4),drivers=[];for(let i=1;i<=3;i++)drivers.push(await account('driver',i));
+assert.equal((await req('/quote',{destination:a},store)).status,403);
+const accounts=(await req('/admin',undefined,owner)).data.accounts.filter(a=>a.email.startsWith(run));for(const u of accounts)assert.equal((await req('/approve-account',{id:u.id,approved:true},owner)).status,200);
+for(const u of accounts.filter(u=>u.role==='driver'))assert.equal((await req('/subscription',{action:'access',userId:u.id,revision:u.subscription.revision,plan:'basic',validUntil:new Date(Date.now()+86400000).toISOString(),revoked:false},owner)).status,200);
+assert.equal((await req('/approve-account',{id:accounts[0].id,approved:true},store)).status,403);
+for(let i=0;i<3;i++)assert.equal((await req('/heartbeat',{online:true,lat:a.lat+(i+1)*0.001,lng:a.lng,geoAt:Date.now(),accuracy:10},drivers[i])).status,200);
+async function makeOrder(extra={}){const q=await req('/quote',{destination:{...a,number:'200',...extra},responsible:'Retirada teste'},store);assert.equal(q.status,200);if(q.data.amount===null){assert.equal((await req('/orders',{quoteId:q.data.id,clientId:crypto.randomUUID()},store)).status,400);await req('/approve-quote',{id:q.data.id,amount:2100},owner);}const clientId=crypto.randomUUID(),o=await req('/orders',{quoteId:q.data.id,clientId,driverId:'inventado',amount:1},store);assert.equal(o.status,200);assert.equal((await req('/orders',{quoteId:q.data.id,clientId},store)).data.id,o.data.id);return o.data.id;}
+const id=await makeOrder();
+let offer=(await req('/orders',undefined,drivers[0])).data.orders.find(o=>o.id===id);assert.ok(offer);assert.deepEqual(Object.keys(offer).sort(),['id','status','expiresAt','storeName','pickup','responsible','amount'].sort());assert.ok(offer.amount>=1000);assert.ok(offer.expiresAt-Date.now()<=5000);assert.equal((await req('/orders',undefined,drivers[1])).data.orders.length,0);
+await new Promise(r=>setTimeout(r,5200));
+assert.equal((await req('/answer',{id,accept:true},drivers[0])).status,409);
+offer=(await req('/orders',undefined,drivers[1])).data.orders.find(o=>o.id===id);assert.ok(offer,'5s expiry must offer to second closest');
+const simultaneous=await Promise.all([req('/answer',{id,accept:true},drivers[1]),req('/answer',{id,accept:true},drivers[1])]);assert.deepEqual(simultaneous.map(r=>r.status).sort(),[200,409]);
+assert.ok((await req('/orders',undefined,drivers[1])).data.orders.find(o=>o.id===id).destination);
+assert.equal((await req('/orders',undefined,store2)).data.orders.length,0);assert.equal((await req('/cancel',{id},store2)).status,404);
+const id2=await makeOrder();assert.equal((await req('/answer',{id:id2,accept:false},drivers[0])).status,200);assert.ok((await req('/orders',undefined,drivers[2])).data.orders.some(o=>o.id===id2),'busy driver must be skipped');
+assert.equal((await req('/cancel',{id:id2},store)).status,200);assert.equal((await req('/answer',{id:id2,accept:true},drivers[2])).status,409);
+const ruralId=await makeOrder({lat:rural[0],lng:rural[1]});assert.equal((await req('/orders',undefined,store)).data.orders.find(o=>o.id===ruralId).amount,2100);
+assert.equal((await req('/quote',{destination:{...a,lat:0,lng:0}},store)).status,400);
+assert.equal((await req('/heartbeat',{online:true,lat:a.lat,lng:a.lng,geoAt:Date.now()-60000,accuracy:10},drivers[0])).status,400);
+assert.equal((await req('/complete',{id},drivers[1])).status,200);
+for(const d of drivers)await req('/heartbeat',{online:false},d);
+for(const order of (await req('/orders',undefined,store)).data.orders)if(!['cancelled','completed'].includes(order.status))await req('/cancel',{id:order.id},store);
+console.log('OK: IBGE zones, São Paulo rates, approvals, privacy, nearest-first, 5s expiry, atomic acceptance, rejection, busy exclusion, cancellation, tenant isolation, server pricing, rural approval and GPS freshness.');

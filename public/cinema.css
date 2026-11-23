@@ -1,0 +1,109 @@
+/* Night skyline and illuminated road, drawn in CSS to keep the interface light. */
+:root {
+  --night-sky: #070e20;
+  --route-light: #72e6ed;
+  --signal-gold: #ffdb67;
+}
+body {
+  background: radial-gradient(ellipse at 82% 0%, #152840, transparent 52rem), var(--night-sky);
+}
+body .login-art, body .home-hero, main > .hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 82% 60%, #254761 0%, transparent 46%),
+    linear-gradient(118deg, #091323 12%, #152541 70%, #28304a);
+  border: 1px solid #375169;
+}
+.login-art::before, .home-hero::before, main > .hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  inset: 18% 0 0 34%;
+  background: linear-gradient(to top, #071321 22%, #285269 72%, #488691);
+  clip-path: polygon(0 100%,0 83%,8% 83%,8% 74%,15% 74%,15% 62%,21% 62%,21% 79%,28% 79%,28% 51%,34% 51%,34% 63%,42% 63%,42% 38%,46% 38%,47% 22%,48% 38%,52% 38%,52% 73%,60% 73%,60% 49%,66% 49%,66% 57%,73% 57%,73% 29%,79% 29%,79% 67%,86% 67%,86% 46%,94% 46%,94% 53%,100% 53%,100% 100%);
+}
+.login-art::after, .home-hero::after, main > .hero::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  inset: 48% -10% 0 10%;
+  background: linear-gradient(156deg, transparent 64%, #72e6ed99 64.5%, transparent 65.3%),
+    linear-gradient(159deg, transparent 67%, #ffdb6780 67.5%, transparent 68.4%),
+    repeating-linear-gradient(174deg, transparent 0 20px, #71c9d514 21px 22px);
+}
+main > .hero {
+  border-radius: 20px;
+  padding: clamp(24px, 5vw, 64px);
+  margin-block: 22px;
+}
+main > .hero h1, .art-copy h2, .welcome-copy h1 {
+  letter-spacing: -.045em;
+  text-wrap: balance;
+  text-shadow: 0 2px 12px #050d1b;
+}
+body .login-side, body .sidebar, body > header {
+  background: linear-gradient(155deg, #121f32, #091220 70%);
+}
+body .goal-card, body .plan-card {
+  background: radial-gradient(ellipse at top right, #214053 0, transparent 65%), #101c2e;
+  box-shadow: inset 0 1px #83edef32, 0 8px 26px #02081238;
+}
+body .plan-card:hover, body .plan-card:focus-visible {
+  border-color: var(--route-light);
+}
+body .nav-item.active {
+  box-shadow: inset 3px 0 var(--signal-gold);
+}
+body .button-primary, button.primary {
+  background: linear-gradient(110deg, #ffe48c, #ffcb40);
+  color: #141821;
+}
+body :focus-visible {
+  outline: 2px solid var(--route-light);
+  outline-offset: 3px;
+}
+@media (max-width: 760px) {
+  main > .hero { margin-block: 12px; }
+  .home-hero::before, main > .hero::before { opacity: .55; }
+  body .login-side { background: radial-gradient(ellipse at top right, #203b4c, transparent 55%), var(--night-sky); }
+}
+
+/* Panorama original da cidade, com o lado esquerdo reservado para leitura. */
+body .login-art, body .home-hero, main > .hero {
+  background-image: linear-gradient(90deg, #070f20f5, #091628bc 40%, #07122226 75%),
+    url("./cidade-futurista.webp");
+  background-size: cover;
+  background-position: center 62%;
+  border-color: #355369;
+  box-shadow: inset 0 1px #9bdeef32, 0 16px 42px #02081445;
+}
+.login-art::before, .home-hero::before, main > .hero::before,
+.login-art::after, .home-hero::after, main > .hero::after {
+  content: none;
+}
+body .stat-card {
+  border-color: #314559;
+  background: linear-gradient(145deg, #192b3b, #101c2a 65%);
+  box-shadow: inset 0 1px #8acfe21c;
+}
+body .stat-card.highlight {
+  border-color: #497c73;
+  background: radial-gradient(ellipse at top right, #235952, transparent 70%), #112a2a;
+}
+.stat-card > strong { font-variant-numeric: tabular-nums; }
+body .nav-item.active {
+  background: linear-gradient(90deg, #514832, #192a39 85%);
+  color: #ffebae;
+}
+@media (hover: hover) {
+  body .stat-link:hover { border-color: #74b9cb; }
+}
+@media (max-width: 760px) {
+  body .home-hero, main > .hero {
+    background-position: 67% center;
+    background-image: linear-gradient(90deg, #071021ec, #0815289c), url("./cidade-futurista.webp");
+  }
+}

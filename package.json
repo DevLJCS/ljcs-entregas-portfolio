@@ -1,0 +1,27 @@
+{
+  "name": "entregas-ljcs",
+  "private": true,
+  "version": "1.25.2",
+  "type": "module",
+  "scripts": {
+    "dev:dispatch": "vite --config development/dispatch/vite.config.js",
+    "build:dispatch": "vite build --config development/dispatch/vite.config.js",
+    "build:app": "vite build",
+    "build:dispatch:site": "vite build --config development/dispatch/vite.config.js --base=/central/ --outDir=../../dist/central --emptyOutDir",
+    "build": "npm run build:app && npm run build:dispatch:site",
+    "dev": "wrangler dev --infer-origin-from-routes=false",
+    "deploy": "npm run build && wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@simplewebauthn/browser": "^13.2.2",
+    "@simplewebauthn/server": "^13.2.2",
+    "leaflet": "1.9.4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261118.1",
+    "typescript": "^5.9.3",
+    "vite": "^6.3.5",
+    "wrangler": "^4.45.0"
+  }
+}
