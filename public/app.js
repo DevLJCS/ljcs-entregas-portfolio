@@ -210,9 +210,13 @@ function expenseRow(expense) {
   const mileage = expense.odometer_km != null
     ? `${Number(expense.odometer_km).toLocaleString("pt-BR")} km no painel`
     : expense.distance_km != null ? `${Number(expense.distance_km).toLocaleString("pt-BR")} km desde o último abastecimento` : "";
+  const marker = expense.fuel_end_level != null
+    ? ` · marcador ${expense.fuel_start_level ?? "?"} → ${expense.fuel_end_level}`
+    : "";
+  const refillType = Number(expense.tank_full) === 1 ? "tanque cheio" : "abastecimento parcial";
   return `<div class="expense-row">
     <span class="expense-icon ${fuel ? "fuel" : ""}">${icon(fuel ? "fuel" : "receipt")}</span>
-    <div class="activity-detail"><strong>${escapeHtml(expense.title)}</strong><span>${fuel ? `${mileage} · ${Number(expense.liters).toLocaleString("pt-BR")} L · tanque cheio` : "Outra despesa"} · ${dateLabel(expense.occurred_at)}</span></div>
+    <div class="activity-detail"><strong>${escapeHtml(expense.title)}</strong><span>${fuel ? `${mileage} · ${Number(expense.liters).toLocaleString("pt-BR")} L · ${refillType}${marker}` : "Outra despesa"} · ${dateLabel(expense.occurred_at)}</span></div>
     <strong class="expense-amount">${brl(expense.amount_cents)}</strong>
     <div class="row-actions"><button class="row-action" data-edit-expense="${expense.id}" aria-label="Editar despesa" title="Editar">${icon("pencil")}</button><button class="delete-item" data-delete-expense="${expense.id}" aria-label="Excluir despesa" title="Excluir">${icon("trash")}</button></div>
   </div>`;
@@ -398,6 +402,7 @@ function openDialog(id) {
     editingExpenseId = null;
     $("#expense-form").reset();
     $("#expense-kind").dispatchEvent(new Event("change"));
+    updateFuelRefillLevels(dashboard?.motorcycle?.level, dashboard?.motorcycle?.level);
     $("#expense-date").value = asLocalInput();
     $("#expense-modal h2").textContent = "Adicionar despesa";
     $("#expense-form .button-primary").innerHTML = 'Salvar despesa <span data-icon="arrow"></span>';
@@ -440,7 +445,8 @@ function editExpense(id) {
     $("#fuel-odometer").value = expense.odometer_km ?? "";
     $("#fuel-distance").value = expense.distance_km ?? "";
     $("#fuel-liters").value = expense.liters ?? "";
-    $("#tank-full").checked = true;
+    $("#tank-full").checked = expense.tank_full == null || Number(expense.tank_full) === 1;
+    updateFuelRefillLevels(expense.fuel_start_level, expense.fuel_end_level);
   }
   $("#expense-modal h2").textContent = "Editar despesa";
   $("#expense-form .button-primary").innerHTML = 'Salvar alterações <span data-icon="arrow"></span>';
@@ -689,11 +695,27 @@ $("#expense-kind").addEventListener("change", (event) => {
   const isFuel = event.target.value === "fuel";
   $("#fuel-fields").classList.toggle("hidden", !isFuel);
   updateFuelMileageFields();
+  $("#fuel-start-level").required = isFuel;
+  $("#fuel-end-level").required = isFuel;
   $("#fuel-liters").required = isFuel;
-  $("#tank-full").required = isFuel;
   $("#expense-title-label").textContent = isFuel ? "Posto / combustível" : "Nome da despesa";
-  $("#expense-title").placeholder = isFuel ? "Nome do posto" : "Ex.: alimentação, manutenção";
+  $("#expense-title").placeholder = isFuel ? "Nome do posto ou combustível" : "Ex.: alimentação, manutenção";
 });
+
+function updateFuelRefillLevels(startLevel, endLevel) {
+  const motorcycle = dashboard?.motorcycle;
+  if (!motorcycle) return;
+  const options = ['<option value="">Selecione…</option>'];
+  for (let level = 0; level <= motorcycle.segments; level++) {
+    const marker = level === 0 ? " · vazio" : level === motorcycle.segments ? " · cheio" : "";
+    options.push(`<option value="${level}">${level}/${motorcycle.segments}${marker}</option>`);
+  }
+  for (const [selector, value] of [["#fuel-start-level", startLevel], ["#fuel-end-level", endLevel]]) {
+    const select = $(selector);
+    select.innerHTML = options.join("");
+    select.value = value == null ? "" : String(value);
+  }
+}
 
 function updateFuelMileageFields() {
   const isFuel = $("#expense-kind").value === "fuel";
@@ -721,7 +743,10 @@ $("#expense-form").addEventListener("submit", async (event) => {
       amount: Number(form.get("amount")),
       odometerKm: kind === "fuel" && $("#fuel-mileage-mode").value === "odometer" ? Number(form.get("odometerKm")) : undefined,
       distanceKm: kind === "fuel" && $("#fuel-mileage-mode").value === "distance" ? Number(form.get("distanceKm")) : undefined,
-      liters: Number(form.get("liters")), tankFull: $("#tank-full").checked
+      liters: kind === "fuel" ? Number(form.get("liters")) : undefined,
+      tankFull: kind === "fuel" ? $("#tank-full").checked : undefined,
+      fuelStartLevel: kind === "fuel" ? Number(form.get("fuelStartLevel")) : undefined,
+      fuelEndLevel: kind === "fuel" ? Number(form.get("fuelEndLevel")) : undefined
     }) });
     const wasEditing = Boolean(editingExpenseId);
     editingExpenseId = null;

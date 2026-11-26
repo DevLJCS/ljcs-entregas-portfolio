@@ -63,7 +63,10 @@ CREATE TABLE IF NOT EXISTS expenses (
   distance_km REAL,
   liters REAL,
   odometer_km REAL,
-  motorcycle_id TEXT NOT NULL DEFAULT 'legacy'
+  motorcycle_id TEXT NOT NULL DEFAULT 'legacy',
+  tank_full INTEGER NOT NULL DEFAULT 1 CHECK (tank_full IN (0, 1)),
+  fuel_start_level INTEGER,
+  fuel_end_level INTEGER
 );
 
 CREATE INDEX IF NOT EXISTS expenses_occurred_at_idx ON expenses (occurred_at);

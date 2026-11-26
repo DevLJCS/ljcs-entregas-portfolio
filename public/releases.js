@@ -1,5 +1,10 @@
 // Add significant releases at the top. See AGENTS.md for the release workflow.
 export const releases = [
+  { version: '1.27.0', date: '2026-11-26', title: 'Abastecimentos parciais e marcador atualizado', changes: [
+    'Registre abastecimentos parciais ou tanque cheio, informando os litros, o marcador antes e o nível depois de abastecer.',
+    'O marcador final atualiza o nível de combustível salvo na moto.',
+    'A média km/L considera os litros e a distância entre abastecimentos completos, incluindo abastecimentos parciais no intervalo.'
+  ] },
   { version: '1.26.0', date: '2026-11-23', title: 'Transparência e canais de suporte', changes: [
     'O painel e a Central agora exibem links para os termos de uso e a política de privacidade.',
     'Rodapés apresentam os canais de suporte, os direitos reservados e a autoria de Luan Cordeiro, com acesso ao perfil do GitHub.',

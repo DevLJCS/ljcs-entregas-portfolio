@@ -11,6 +11,7 @@ Projeto de portfólio de uma aplicação web para gestão financeira de entregad
 - Registro de corridas, estabelecimento, plataforma e situação do pagamento.
 - Acompanhamento de valores faturados, recebidos e pendentes.
 - Controle de despesas, abastecimentos, hodômetro e nível de combustível.
+- Abastecimentos completos ou parciais com marcadores inicial e final; o consumo médio usa intervalos entre tanques completos.
 - Jornadas com início, pausa, retomada, encerramento e métricas.
 - Saldo diário, despesas, metas, relatórios e exportação CSV.
 - Central de demonstração com perfis de loja, entregador e administração.

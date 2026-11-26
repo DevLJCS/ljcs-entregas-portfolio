@@ -57,6 +57,17 @@ interface ExpenseInput {
   distanceKm?: number;
   liters?: number;
   tankFull?: boolean;
+  fuelStartLevel?: number;
+  fuelEndLevel?: number;
+}
+
+function validFuelMarkers(body: ExpenseInput, segments: number): boolean {
+  const hasStart = body.fuelStartLevel !== undefined;
+  const hasEnd = body.fuelEndLevel !== undefined;
+  if (!hasStart && !hasEnd) return true;
+  return hasStart && hasEnd &&
+    Number.isInteger(body.fuelStartLevel) && Number(body.fuelStartLevel) >= 0 && Number(body.fuelStartLevel) <= segments &&
+    Number.isInteger(body.fuelEndLevel) && Number(body.fuelEndLevel) >= 0 && Number(body.fuelEndLevel) <= segments;
 }
 
 const SESSION_COOKIE = "__Host-ride_session";
@@ -568,7 +579,7 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
     const [rides, expenses, allFuel, setting, fuelLevelSetting, historyRides, previousDailyNets] = await Promise.all([
       env.DB.prepare("SELECT * FROM rides WHERE substr(occurred_at, 1, 10) = ? ORDER BY occurred_at DESC").bind(day).all(),
       env.DB.prepare("SELECT * FROM expenses WHERE substr(occurred_at, 1, 10) = ? ORDER BY occurred_at DESC").bind(day).all(),
-      env.DB.prepare("SELECT occurred_at, distance_km, odometer_km, liters FROM expenses WHERE kind = 'fuel' AND motorcycle_id = ? ORDER BY occurred_at ASC, id ASC").bind(motorcycle.id).all(),
+      env.DB.prepare("SELECT occurred_at, distance_km, odometer_km, liters, tank_full FROM expenses WHERE kind = 'fuel' AND motorcycle_id = ? ORDER BY occurred_at ASC, id ASC").bind(motorcycle.id).all(),
       env.DB.prepare("SELECT value FROM settings WHERE key = 'daily_goal_cents'").first<{ value: string }>(),
       env.DB.prepare("SELECT value FROM settings WHERE key = 'fuel_level'").first<{ value: string }>(),
       env.DB.prepare("SELECT substr(occurred_at, 1, 10) AS day, COUNT(*) AS count, SUM(amount_cents) AS total FROM rides WHERE occurred_at >= ? GROUP BY day ORDER BY day DESC LIMIT 30")
@@ -588,23 +599,49 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
     const pendingPaymentCents = grossCents - paidCents;
     const expenseCents = expenseRows.reduce((sum, item) => sum + item.amount_cents, 0);
     const carryCents = carryBeforeDay(previousDailyNets.results,day);
-    const fuelRows = allFuel.results as Array<{ distance_km: number | null; odometer_km: number | null; liters: number | null }>;
-    let distance = 0;
-    let liters = 0;
-    let previousOdometer: number | null = null;
+    const fuelRows = allFuel.results as Array<{ distance_km: number | null; odometer_km: number | null; liters: number | null; tank_full: number }>;
+    let distance = 0, liters = 0, intervalDistance = 0, intervalLiters = 0;
+    let anchorOdometer: number | null = null, previousOdometer: number | null = null;
+    let hasFullTankAnchor = false, intervalDistanceKnown = true;
     for (const fuel of fuelRows) {
-      if (fuel.odometer_km !== null) {
-        if (previousOdometer !== null && fuel.odometer_km > previousOdometer) {
-          distance += fuel.odometer_km - previousOdometer;
-          liters += fuel.liters ?? 0;
+      if (!hasFullTankAnchor) {
+        if (fuel.tank_full) {
+          hasFullTankAnchor = true;
+          anchorOdometer = fuel.odometer_km;
+          previousOdometer = fuel.odometer_km;
+        }
+        continue;
+      }
+      intervalLiters += fuel.liters ?? 0;
+      if (fuel.distance_km !== null) {
+        intervalDistance += fuel.distance_km;
+        previousOdometer = null;
+      } else if (fuel.odometer_km !== null) {
+        if (previousOdometer !== null && fuel.odometer_km >= previousOdometer) {
+          intervalDistance += fuel.odometer_km - previousOdometer;
+        } else if (previousOdometer === null && intervalDistance === 0 && anchorOdometer !== null && fuel.odometer_km >= anchorOdometer) {
+          intervalDistance = fuel.odometer_km - anchorOdometer;
+        } else {
+          intervalDistanceKnown = false;
         }
         previousOdometer = fuel.odometer_km;
       } else {
-        previousOdometer = null;
-        if (fuel.distance_km !== null) {
-          distance += fuel.distance_km;
-          liters += fuel.liters ?? 0;
+        intervalDistanceKnown = false;
+      }
+      if (fuel.tank_full) {
+        const odometerDistance = anchorOdometer !== null && fuel.odometer_km !== null && fuel.odometer_km > anchorOdometer
+          ? fuel.odometer_km - anchorOdometer
+          : null;
+        const interval = odometerDistance ?? (intervalDistanceKnown ? intervalDistance : null);
+        if (interval !== null && interval > 0 && intervalLiters > 0) {
+          distance += interval;
+          liters += intervalLiters;
         }
+        anchorOdometer = fuel.odometer_km;
+        previousOdometer = fuel.odometer_km;
+        intervalDistance = 0;
+        intervalLiters = 0;
+        intervalDistanceKnown = true;
       }
     }
     return json({
@@ -691,22 +728,26 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
     const isFuel = body?.kind === "fuel";
     if (!body || !validDate(body.occurredAt) || !body.title?.trim() || body.title.length > 100 ||
         amountCents === null || !["fuel", "other"].includes(body.kind) ||
-        (isFuel && (body.tankFull !== true ||
+        (isFuel && ((body.tankFull !== undefined && typeof body.tankFull !== "boolean") ||
           Number(typeof body.odometerKm === "number") + Number(typeof body.distanceKm === "number") !== 1 ||
           (typeof body.odometerKm === "number" && (!Number.isFinite(body.odometerKm) || body.odometerKm < 0 || body.odometerKm > 999999)) ||
           (typeof body.distanceKm === "number" && (!Number.isFinite(body.distanceKm) || body.distanceKm <= 0 || body.distanceKm > 5000)) ||
-          typeof body.liters !== "number" || body.liters <= 0 || body.liters > 100))) {
-      return fail(isFuel ? "Para abastecimento, informe a leitura do odômetro ou a distância desde o último tanque, litros e confirme tanque cheio." : "Confira os dados da despesa.");
+          typeof body.liters !== "number" || !Number.isFinite(body.liters) || body.liters <= 0 || body.liters > 100))) {
+      return fail(isFuel ? "Para abastecimento, informe a leitura do odômetro ou a distância, os litros e um tipo válido de abastecimento." : "Confira os dados da despesa.");
     }
     const motorcycleState = await garage(env.DB);
     const expenseMotorcycle = motorcycleState.profiles.find(p => p.id === (body.motorcycleId ?? 'legacy'));
     if (!expenseMotorcycle) return fail("Moto do registro não encontrada.");
+    if (isFuel && !validFuelMarkers(body, expenseMotorcycle.segments)) return fail(`Informe os marcadores inicial e final entre 0 e ${expenseMotorcycle.segments}.`);
+    const tankFull = body.tankFull !== false;
     const inserted = await env.DB.prepare(
-      "INSERT OR IGNORE INTO expenses (id, occurred_at, kind, title, amount_cents, distance_km, liters, odometer_km, motorcycle_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      "INSERT OR IGNORE INTO expenses (id, occurred_at, kind, title, amount_cents, distance_km, liters, odometer_km, motorcycle_id, tank_full, fuel_start_level, fuel_end_level) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     ).bind(body.clientId && /^[A-Za-z0-9_-]{16,64}$/.test(body.clientId) ? body.clientId : randomId(16), body.occurredAt, body.kind, body.title.trim(), amountCents,
-      isFuel ? body.distanceKm ?? null : null, isFuel ? body.liters! : null, isFuel ? body.odometerKm ?? null : null, expenseMotorcycle.id).run();
+      isFuel ? body.distanceKm ?? null : null, isFuel ? body.liters! : null, isFuel ? body.odometerKm ?? null : null, expenseMotorcycle.id,
+      Number(!isFuel || tankFull), isFuel ? body.fuelStartLevel ?? null : null, isFuel ? body.fuelEndLevel ?? null : null).run();
     if (isFuel && inserted.meta.changes) {
-      expenseMotorcycle.level = expenseMotorcycle.segments;
+      if (body.fuelEndLevel !== undefined) expenseMotorcycle.level = body.fuelEndLevel;
+      else if (tankFull) expenseMotorcycle.level = expenseMotorcycle.segments;
       await storeGarage(env.DB, motorcycleState);
     }
     return json({ saved: true }, 201);
@@ -719,18 +760,32 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
     const isFuel = body?.kind === "fuel";
     if (!body || !validDate(body.occurredAt) || !body.title?.trim() || body.title.length > 100 ||
         amountCents === null || !["fuel", "other"].includes(body.kind) ||
-        (isFuel && (body.tankFull !== true ||
+        (isFuel && ((body.tankFull !== undefined && typeof body.tankFull !== "boolean") ||
           Number(typeof body.odometerKm === "number") + Number(typeof body.distanceKm === "number") !== 1 ||
           (typeof body.odometerKm === "number" && (!Number.isFinite(body.odometerKm) || body.odometerKm < 0 || body.odometerKm > 999999)) ||
           (typeof body.distanceKm === "number" && (!Number.isFinite(body.distanceKm) || body.distanceKm <= 0 || body.distanceKm > 5000)) ||
-          typeof body.liters !== "number" || body.liters <= 0 || body.liters > 100))) {
-      return fail(isFuel ? "Para abastecimento, informe a leitura do odômetro ou a distância desde o último tanque, litros e confirme tanque cheio." : "Confira os dados da despesa.");
+          typeof body.liters !== "number" || !Number.isFinite(body.liters) || body.liters <= 0 || body.liters > 100))) {
+      return fail(isFuel ? "Para abastecimento, informe a leitura do odômetro ou a distância, os litros e um tipo válido de abastecimento." : "Confira os dados da despesa.");
     }
+    const motorcycleState = await garage(env.DB);
+    const existing = await env.DB.prepare("SELECT motorcycle_id FROM expenses WHERE id = ?").bind(expenseUpdate[1]).first<{motorcycle_id:string}>();
+    if (!existing) return fail("Despesa não encontrada.", 404);
+    const expenseMotorcycle = motorcycleState.profiles.find(p => p.id === existing.motorcycle_id);
+    if (!expenseMotorcycle) return fail("Moto do registro não encontrada.");
+    if (isFuel && !validFuelMarkers(body, expenseMotorcycle.segments)) return fail(`Informe os marcadores inicial e final entre 0 e ${expenseMotorcycle.segments}.`);
+    const tankFull = body.tankFull !== false;
     const result = await env.DB.prepare(
-      "UPDATE expenses SET occurred_at = ?, kind = ?, title = ?, amount_cents = ?, distance_km = ?, liters = ?, odometer_km = ? WHERE id = ?"
+      "UPDATE expenses SET occurred_at = ?, kind = ?, title = ?, amount_cents = ?, distance_km = ?, liters = ?, odometer_km = ?, tank_full = ?, fuel_start_level = ?, fuel_end_level = ? WHERE id = ?"
     ).bind(body.occurredAt, body.kind, body.title.trim(), amountCents,
-      isFuel ? body.distanceKm ?? null : null, isFuel ? body.liters! : null, isFuel ? body.odometerKm ?? null : null, expenseUpdate[1]).run();
+      isFuel ? body.distanceKm ?? null : null, isFuel ? body.liters! : null, isFuel ? body.odometerKm ?? null : null,
+      Number(!isFuel || tankFull), isFuel ? body.fuelStartLevel ?? null : null, isFuel ? body.fuelEndLevel ?? null : null, expenseUpdate[1]).run();
     if (!result.meta.changes) return fail("Despesa não encontrada.", 404);
+    const latestFuel = await env.DB.prepare("SELECT id, fuel_end_level FROM expenses WHERE kind = 'fuel' AND motorcycle_id = ? ORDER BY occurred_at DESC, id DESC LIMIT 1")
+      .bind(expenseMotorcycle.id).first<{id:string;fuel_end_level:number|null}>();
+    if (latestFuel?.id === expenseUpdate[1] && latestFuel.fuel_end_level !== null) {
+      expenseMotorcycle.level = latestFuel.fuel_end_level;
+      await storeGarage(env.DB, motorcycleState);
+    }
     return json({ saved: true });
   }
 
